@@ -60,3 +60,4 @@ echo TIP: Press Esc in Excel if editing a cell.
 echo.
 %PYTHON_CMD% main.py
 pause
+:: end of file

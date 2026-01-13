@@ -25,6 +25,14 @@ Hotkeys:
 
 import excel_ops
 import data_fetcher
+import sys
+if sys.platform == 'win32':
+    # Avoid crashing on special characters (common with LLM output)
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 import keyboard
 import time
 import threading
@@ -32,6 +40,7 @@ import queue
 import pythoncom
 import tkinter as tk
 from tkinter import simpledialog
+import argparse
 
 # =============================================================================
 # GLOBAL STATE

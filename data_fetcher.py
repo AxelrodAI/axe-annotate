@@ -36,22 +36,30 @@ def fetch_comments(ticker: str, period: str, line_item: str) -> str:
     try:
         print(f"[DataFetcher] RAG Fetch: {ticker} | {period} | {line_item}")
         
-        # 1. Fetch Content (EDGAR 10-Q/K, Firecrawl, or Mock)
-        content = rag.get_filing_content(ticker, period)
-        
-        if not content:
-            return f"Error: Could not retrieve data for {ticker} {period}."
+        # 1. Fetch Content
+        try:
+            content = rag.get_filing_content(ticker, period)
+        except Exception as e:
+            return f"Error Fetching Filing: {str(e)}"
             
-        # 2. Retrieve Context
+        if not content:
+            return f"No filing data found for {ticker} ({period})."
         
-        # 3. Retrieve Context
+        # 2. Retrieve Context
         # If line_item is unknown/generic, use broader terms
         query = line_item if line_item and line_item != "Unknown Line Item" else "Financial Highlights"
         
-        raw_insights = rag.retrieve_context(content, query)
+        try:
+            raw_insights = rag.retrieve_context(content, query)
+        except Exception as e:
+            raw_insights = f"Error extracting context: {e}"
         
-        # 4. Summarize with LLM
-        summary = rag.summarize_context(raw_insights, query)
+        # 3. Summarize with LLM (with timeout/fail safety)
+        summary = "Summary unavailable (Time out or Error)."
+        try:
+            summary = rag.summarize_context(raw_insights, query)
+        except Exception as e:
+            summary = f"AI Summary Failed: {e}\n\nRaw Context:\n{raw_insights[:500]}..."
         
         # 4. Format Output
         formatted = f"--- AXE KEY INSIGHTS ---\n"
@@ -63,5 +71,5 @@ def fetch_comments(ticker: str, period: str, line_item: str) -> str:
         return formatted
 
     except Exception as e:
-        print(f"[DataFetcher] Error: {e}")
-        return f"Error fetching data: {e}"
+        print(f"[DataFetcher] Fatal Error: {e}")
+        return f"System Error: {str(e)}"

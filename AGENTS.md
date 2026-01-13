@@ -31,8 +31,15 @@ This file provides context and guidelines for AI agents working on this codebase
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                     data_fetcher.py                         │
-│  - Fetches annotation content (currently mock data)         │
-│  - Future: Connect to SEC EDGAR, transcript APIs            │
+│  - Coordinate logic for data retrieval                      │
+│  - Calls rag_ops.py for RAG pipeline                        │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│             rag_ops.py  &  edgar_ops.py                     │
+│  - rag_ops: Search, Retrieve, and LLM Summarization         │
+│  - edgar_ops: SEC.gov fetching (No API Key required)        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -58,6 +65,10 @@ This was a major bug. The root cause:
 ### File Descriptions
 
 | File | Purpose |
+|------|---------|
+| `rag_ops.py` | **RAG Pipeline**: Coordinates fetching + extracting + summarizing |
+| `edgar_ops.py` | **SEC Client**: Fetches 10-Q/10-K text directly from SEC.gov |
+| `debug_rag_pipeline.py` | **Diagnostics**: Tests web fetching & LLM in isolation |
 |------|---------|
 | `main.py` | Entry point. Hotkey registration, worker thread, task queue |
 | `excel_ops.py` | All Excel COM interactions. Selection, context, comments |

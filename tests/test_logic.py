@@ -28,6 +28,10 @@ class TestAxeAnnotate(unittest.TestCase):
         # Mock xlwings selection object
         mock_selection = MagicMock()
         mock_sheet = MagicMock()
+        mock_book = MagicMock()
+        mock_book.name = "AAPL Q4 Analysis.xlsx"
+        mock_sheet.book = mock_book
+        
         mock_selection.sheet = mock_sheet
         mock_selection.row = 2
         mock_selection.column = 2 # Column B

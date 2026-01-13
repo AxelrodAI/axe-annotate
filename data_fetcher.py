@@ -48,13 +48,17 @@ def fetch_comments(ticker: str, period: str, line_item: str) -> str:
         # If line_item is unknown/generic, use broader terms
         query = line_item if line_item and line_item != "Unknown Line Item" else "Financial Highlights"
         
-        insights = rag.retrieve_context(content, query)
+        raw_insights = rag.retrieve_context(content, query)
         
+        # 4. Summarize with LLM
+        summary = rag.summarize_context(raw_insights, query)
+        
+        # 4. Format Output
         formatted = f"--- AXE KEY INSIGHTS ---\n"
         formatted += f"Target: {ticker} | Period: {period}\n"
-        formatted += f"Topic: {line_item}\n"
-        formatted += f"Source: Transcript\n\n"
-        formatted += insights
+        formatted += f"Topic: {query}\n"
+        formatted += f"Source: 10-Q/K (AI Summarized)\n\n"
+        formatted += summary
         
         return formatted
 

@@ -393,11 +393,37 @@ def get_context(selection):
     if not time_period:
         time_period = "Unknown Period"
 
-    # Ticker from A1
+    # Ticker Strategy:
+    # 1. Check Cell A1
+    # 2. Check Workbook Filename (e.g. "AAPL Q4 2023.xlsx")
     ticker = "UNKNOWN"
+    
+    # Try A1
     ticker_val = _safe_read_cell(sheet, 1, 1)
     if ticker_val and _is_likely_label(ticker_val):
-        ticker = str(ticker_val).strip()
+        t_cand = str(ticker_val).strip()
+        # Basic validation: Tickers are usually short (1-5 chars)
+        if len(t_cand) <= 5 and t_cand.isalpha():
+            ticker = t_cand
+            print(f"[Context] Ticker found in A1: {ticker}")
+    
+    # Try Filename if A1 failed
+    if ticker == "UNKNOWN":
+        try:
+            wb_name = sheet.book.name
+            # Regex: Find first word that is all caps or looks like a ticker
+            # Helper: First sequence of 1-5 letters
+            import re
+            match = re.search(r'\b[A-Z]{1,5}\b', wb_name)
+            if not match:
+                # Try case-insensitive specific check? Or just first word
+                match = re.search(r'^\w+', wb_name)
+            
+            if match:
+                ticker = match.group(0).upper()
+                print(f"[Context] Ticker extracted from filename '{wb_name}': {ticker}")
+        except Exception as e:
+            print(f"[Context] Could not read filename: {e}")
     
     print(f"[Context] Result: Ticker='{ticker}', Period='{time_period}', Item='{line_item}'")
 

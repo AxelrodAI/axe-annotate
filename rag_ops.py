@@ -15,11 +15,8 @@ import os
 import re
 import time
 import json
-
-import os
-import re
-import time
-import json
+import urllib.request
+import urllib.parse
 import edgar_ops  # Import our new module
 
 # Placeholder for Firecrawl client
@@ -67,15 +64,40 @@ class RAGPipeline:
         print("[RAG] EDGAR failed or not found. Using Mock Data.")
         return self._get_mock_transcript(ticker, period)
 
+    def summarize_context(self, context_text, kpi):
+        """
+        Uses a public LLM (Pollinations.ai) to summarize the text.
+        """
+        if not context_text or "No specific comments" in context_text:
+            return context_text
+            
+        # Truncate context heavily for GET request (URL limit ~2000 chars)
+        short_context = context_text[:1500] 
+        prompt = f"Summarize 3 key insights about '{kpi}' from: {short_context}"
+        
+        print(f"[RAG] Summarizing with LLM (GET) for '{kpi}'...")
+        
+        try:
+            # Pollinations.ai GET request
+            encoded_prompt = urllib.parse.quote(prompt)
+            url = f"https://text.pollinations.ai/{encoded_prompt}"
+            
+            # Use short timeout
+            with urllib.request.urlopen(url, timeout=10) as response:
+                summary = response.read().decode('utf-8')
+                return summary.strip()
+                
+                
+        except Exception as e:
+            print(f"[RAG] LLM Summarization failed: {e}")
+            return context_text + "\n\n(AI Summarization Unavailable)"
+
     def find_transcript_url(self, ticker, period):
         """Deprecated: Logic moved to get_filing_content"""
         return f"https://www.seekingalpha.com/symbol/{ticker}/earnings/transcripts"
 
     def fetch_content(self, url_or_ticker):
-        """
-        Legacy wrapper for backward compatibility if needed, 
-        but we prefer get_filing_content now.
-        """
+        """Legacy wrapper"""
         pass
 
     def retrieve_context(self, text, query_kpi):
@@ -97,12 +119,15 @@ class RAGPipeline:
         relevant_chunks = []
         
         # Normalize query
+        query_cleaned = query_kpi.lower().replace("revenue", "").replace("income", "").strip()
         keywords = query_kpi.lower().split()
-        stopwords = {'revenue', 'income', 'profit', 'margin', 'sales', 'of', 'in', 'the', 'a', 'an', 'to', 'for', 'and', 'from'}
+        
+        stopwords = {'revenue', 'income', 'profit', 'margin', 'sales', 'of', 'in', 'the', 'a', 'an', 'to', 'for', 'and', 'from', 'net', 'gross'}
         search_terms = [k for k in keywords if k not in stopwords and len(k) > 2]
         
+        # If query was generic like "Net Income", restore the filtered words
         if not search_terms:
-            search_terms = keywords 
+            search_terms = [k for k in keywords if len(k) > 2]
             
         print(f"[RAG] Search terms: {search_terms}")
 
@@ -110,9 +135,6 @@ class RAGPipeline:
             p_lower = p.lower()
             # Score: +1 for each term found
             score = sum(1 for term in search_terms if term in p_lower)
-            
-            # Boost for strict whole-word matches or proximity?
-            # For now, simple count is fine.
             
             if score > 0 and len(p) > 50: # Filter simplistic lines
                 relevant_chunks.append((score, p.strip()))
@@ -123,20 +145,19 @@ class RAGPipeline:
         # Return top chunks
         top_chunks = []
         seen = set()
-        for score, chunk in relevant_chunks[:4]:
+        # Get more chunks for the LLM to process (up to 8)
+        for score, chunk in relevant_chunks[:8]:
             if chunk not in seen:
                 # Truncate very long chunks
-                if len(chunk) > 500:
-                    chunk = chunk[:500] + "..."
+                if len(chunk) > 1000:
+                    chunk = chunk[:1000] + "..."
                 top_chunks.append(chunk)
                 seen.add(chunk)
-                if len(top_chunks) >= 3:
-                    break
         
         if not top_chunks:
             return "No specific comments found for this item in the filing."
             
-        return "\n\n".join([f"> {c}" for c in top_chunks])
+        return "\n\n".join(top_chunks)
 
     def _fetch_firecrawl(self, url):
         # ... existing firecrawl logic ...

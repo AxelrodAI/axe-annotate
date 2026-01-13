@@ -1,5 +1,11 @@
 import unittest
 from unittest.mock import MagicMock
+import sys
+import os
+
+# Add parent directory to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import data_fetcher
 import excel_ops
 

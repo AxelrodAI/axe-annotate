@@ -49,14 +49,15 @@ tests/           → Debug and test scripts
 
 ## Future Enhancements
 
-### Phase 3: Real Data Sources
-- [ ] Connect to SEC EDGAR API for 10-K/10-Q filings
-- [ ] Integrate earnings transcript APIs
-- [ ] Add caching layer for fetched documents
+### Phase 3: RAG Data Pipeline (Current Focus)
+- [ ] **Search**: Function to find transcript URLs (Site:SeekingAlpha/MotleyFool)
+- [ ] **Fetch**: Firecrawl integration to scrape transcript text
+- [ ] **Retrieval**: Simple text search/embedding to find KPI-relevant paragraphs
+- [ ] **Generation**: Format extracted insights into comments
 
 ### Phase 4: AI Enhancement
-- [ ] GPT/Claude integration for smart summarization
-- [ ] Semantic search across filings
+- [ ] LLM integration (OpenAI/Anthropic) to summarize retrieved chunks
+- [ ] Semantic search for improved retrieval accuracy
 - [ ] Custom prompts with AI-generated answers
 
 ### Phase 5: UI/UX

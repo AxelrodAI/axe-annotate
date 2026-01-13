@@ -13,17 +13,17 @@ Potential Data Sources:
 - Custom internal databases
 """
 
-import time
-
+from rag_ops import rag
 
 def fetch_comments(ticker: str, period: str, line_item: str) -> str:
     """
-    Fetches contextual comments for a given financial data point.
+    Fetches contextual comments using the RAG pipeline.
     
-    In production, this would:
-    1. Search SEC EDGAR for the 10-Q/10-K matching the period
-    2. Search transcript APIs for earnings call mentions
-    3. Extract relevant snippets using NLP/keyword matching
+    Workflow:
+    1. Search for transcript/filing URL (rag.find_transcript_url)
+    2. Scrape content via Firecrawl (rag.fetch_content)
+    3. Retrieve relevant sections (rag.retrieve_context)
+    4. Format for display
     
     Args:
         ticker: Stock symbol (e.g., "AAPL", "MSFT")
@@ -33,57 +33,31 @@ def fetch_comments(ticker: str, period: str, line_item: str) -> str:
     Returns:
         Formatted string with annotation content
     """
-    print(f"[DataFetcher] Fetching: {ticker} | {period} | {line_item}")
-    
-    # Simulate network delay
-    time.sleep(0.5)
-    
-    # Mock dataset - keyed by lowercase line item
-    mock_data = {
-        "revenue": [
-            f"{ticker} reported strong revenue growth in {period} driven by demand.",
-            "Segment A contributed 60% of total sales."
-        ],
-        "net income": [
-            "Net income was impacted by one-time tax charges.",
-            "Operational efficiency improved margins quarter-over-quarter."
-        ],
-        "net interest income": [
-            f"Net interest income (NII) was a key driver for {ticker} in {period}.",
-            "Higher rates supported NII expansion, offset by deposit costs.",
-            "Management expects NII to stabilize in coming quarters."
-        ],
-        "eps": [
-            f"Earnings per share for {period} exceeded analyst expectations.",
-            "Share buybacks contributed to EPS growth."
-        ],
-        "operating expenses": [
-            "Operating expenses were well-controlled despite inflation.",
-            "Technology investments increased as planned."
-        ]
-    }
-    
-    # Case-insensitive lookup
-    line_item_lower = (line_item or "").lower()
-    
-    if line_item_lower in mock_data:
-        comments = mock_data[line_item_lower]
-    else:
-        # Generic fallback for unknown items
-        company = ticker if ticker != "UNKNOWN" else "The company"
-        comments = [
-            f"Analyst Note: {line_item} for {company} in {period} aligns with consensus.",
-            f"Management discussed {line_item} trends during the {period} earnings call.",
-            f"See 10-Q {period} for detailed breakdown of {line_item}."
-        ]
-    
-    # Format the output
-    formatted = f"--- AXE ANNOTATE ---\n"
-    formatted += f"Ticker: {ticker} | Period: {period}\n"
-    formatted += f"Item: {line_item}\n"
-    formatted += f"Source: Automated Insight\n\n"
-    
-    for comment in comments:
-        formatted += f"• {comment}\n"
+    try:
+        print(f"[DataFetcher] RAG Fetch: {ticker} | {period} | {line_item}")
         
-    return formatted
+        # 1. Search (Simulated for now)
+        url = rag.find_transcript_url(ticker, period)
+        
+        # 2. Fetch Content (Mock/Firecrawl)
+        content = rag.fetch_content(url)
+        if not content:
+            return f"Error: Could not retrieve data for {ticker} {period}."
+        
+        # 3. Retrieve Context
+        # If line_item is unknown/generic, use broader terms
+        query = line_item if line_item and line_item != "Unknown Line Item" else "Financial Highlights"
+        
+        insights = rag.retrieve_context(content, query)
+        
+        formatted = f"--- AXE KEY INSIGHTS ---\n"
+        formatted += f"Target: {ticker} | Period: {period}\n"
+        formatted += f"Topic: {line_item}\n"
+        formatted += f"Source: Transcript\n\n"
+        formatted += insights
+        
+        return formatted
+
+    except Exception as e:
+        print(f"[DataFetcher] Error: {e}")
+        return f"Error fetching data: {e}"

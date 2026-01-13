@@ -36,13 +36,13 @@ def fetch_comments(ticker: str, period: str, line_item: str) -> str:
     try:
         print(f"[DataFetcher] RAG Fetch: {ticker} | {period} | {line_item}")
         
-        # 1. Search (Simulated for now)
-        url = rag.find_transcript_url(ticker, period)
+        # 1. Fetch Content (EDGAR 10-Q/K, Firecrawl, or Mock)
+        content = rag.get_filing_content(ticker, period)
         
-        # 2. Fetch Content (Mock/Firecrawl)
-        content = rag.fetch_content(url)
         if not content:
             return f"Error: Could not retrieve data for {ticker} {period}."
+            
+        # 2. Retrieve Context
         
         # 3. Retrieve Context
         # If line_item is unknown/generic, use broader terms
